@@ -22,13 +22,13 @@ void PulseMeterSensor::loop() {
 
   // Check to see if we should filter this edge out
   if (this->filter_mode_ == PULSE_METER_EDGE) {
-    if ((this->last_detected_edge_us_ - this->last_valid_edge_us_) >= this->filter_us_) {
+    if ((this->last_detected_edge_us_ - this->last_valid_high_edge_us_) >= this->filter_us_) {
       // Don't measure the first valid pulse (we need at least two pulses to measure the width)
-      if (this->last_valid_edge_us_ != 0) {
-        this->pulse_width_us_ = (this->last_detected_edge_us_ - this->last_valid_edge_us_);
+      if (this->last_valid_high_edge_us_ != 0) {
+        this->pulse_width_us_ = (this->last_detected_edge_us_ - this->last_valid_high_edge_us_);
       }
       this->total_pulses_++;
-      this->last_valid_edge_us_ = this->last_detected_edge_us_;
+      this->last_valid_high_edge_us_ = this->last_detected_edge_us_;
     }
   } else {
     // Make sure the signal has been stable long enough
