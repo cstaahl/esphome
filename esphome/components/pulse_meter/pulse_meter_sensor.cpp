@@ -15,7 +15,7 @@ void PulseMeterSensor::setup() {
   this->last_detected_edge_us_ = 0;
   this->last_valid_high_edge_us_ = 0;
   this->last_valid_low_edge_us_ = 0;
-  this->sensor_is_high_ = this->isr_pin_.digital_read();
+  this->sensor_is_high_ = this->isr_pin_.digital_read() ^ this->is_inverted_;
   this->has_valid_high_edge_ = false;
   this->has_valid_low_edge_ = false;
 }
@@ -68,6 +68,11 @@ void PulseMeterSensor::set_total_pulses(uint32_t pulses) { this->total_pulses_ =
 void PulseMeterSensor::dump_config() {
   LOG_SENSOR("", "Pulse Meter", this);
   LOG_PIN("  Pin: ", this->pin_);
+  
+  if (this->is_inverted_) {
+    ESP_LOGCONFIG(TAG, "  Inverting pin signal before applying logic.");
+  }
+  
   if (this->filter_mode_ == FILTER_EDGE) {
     ESP_LOGCONFIG(TAG, "  Filtering rising edges less than %u µs apart", this->filter_us_);
   } else {
@@ -83,10 +88,11 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
   // Get the current time before we do anything else so the measurements are
   // consistent
   const uint32_t now = micros();
+  const bool pin_val = sensor->isr_pin_.digital_read() ^ sensor->is_inverted_;
 
   // We only look at rising edges in EDGE mode, and all edges in PULSE mode
   if (sensor->filter_mode_ == FILTER_EDGE) {
-    if (sensor->isr_pin_.digital_read()) {
+    if (pin_val) {
       sensor->last_detected_edge_us_ = now;
     }
   }
@@ -105,7 +111,6 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
     }
   } else {
     // Filter Mode is PULSE
-    bool pin_val = sensor->isr_pin_.digital_read();
     // Ignore false edges that may be caused by bouncing and exit the ISR ASAP
     if (pin_val == sensor->sensor_is_high_) {
       return;
