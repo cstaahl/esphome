@@ -20,6 +20,7 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
   void set_filter_mode(InternalFilterMode mode) { this->filter_mode_ = mode; }
   void set_timeout_us(uint32_t timeout) { this->timeout_us_ = timeout; }
   void set_total_sensor(sensor::Sensor *sensor) { this->total_sensor_ = sensor; }
+  void set_inverted(bool is_inverted) { this->is_inverted_ = is_inverted; }
 
   void set_total_pulses(uint32_t pulses);
 
@@ -37,6 +38,7 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
   uint32_t timeout_us_ = 1000000UL * 60UL * 5UL;
   sensor::Sensor *total_sensor_ = nullptr;
   InternalFilterMode filter_mode_{FILTER_EDGE};
+  bool is_inverted_;
 
   Deduplicator<uint32_t> pulse_width_dedupe_;
   Deduplicator<uint32_t> total_dedupe_;

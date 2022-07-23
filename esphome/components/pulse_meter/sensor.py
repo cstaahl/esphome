@@ -4,6 +4,7 @@ from esphome import automation, pins
 from esphome.components import sensor
 from esphome.const import (
     CONF_ID,
+    CONF_INVERTED,
     CONF_INTERNAL_FILTER,
     CONF_INTERNAL_FILTER_MODE,
     CONF_PIN,
@@ -56,7 +57,6 @@ def validate_pulse_meter_pin(value):
         )
     return value
 
-
 CONFIG_SCHEMA = sensor.sensor_schema(
     PulseMeterSensor,
     unit_of_measurement=UNIT_PULSES_PER_MINUTE,
@@ -77,6 +77,7 @@ CONFIG_SCHEMA = sensor.sensor_schema(
         cv.Optional(CONF_INTERNAL_FILTER_MODE, default="EDGE"): cv.enum(
             FILTER_MODES, upper=True
         ),
+        cv.Optional(CONF_INVERTED, default=False): cv.boolean,
     }
 )
 
@@ -90,6 +91,7 @@ async def to_code(config):
     cg.add(var.set_filter_us(config[CONF_INTERNAL_FILTER]))
     cg.add(var.set_timeout_us(config[CONF_TIMEOUT]))
     cg.add(var.set_filter_mode(config[CONF_INTERNAL_FILTER_MODE]))
+    cg.add(var.set_inverted(config[CONF_INVERTED]))
 
     if CONF_TOTAL in config:
         sens = await sensor.new_sensor(config[CONF_TOTAL])
