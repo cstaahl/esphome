@@ -38,7 +38,17 @@ SetTotalPulsesAction = pulse_meter_ns.class_("SetTotalPulsesAction", automation.
 
 
 def validate_internal_filter(value):
-    return cv.positive_time_period_microseconds(value)
+    try:
+        keys = value.keys()
+        if (len(keys) == 2 and "True" in keys and "False" in keys):
+            value['True'] = cv.positive_time_period_microseconds(value['True'])
+            value['False'] = cv.positive_time_period_microseconds(value['False'])
+            return value
+    except:
+        value_d = dict()
+        value_d['True'] = cv.positive_time_period_microseconds(value)
+        value_d['False'] = value_d['True']
+        return value_d
 
 
 def validate_timeout(value):
@@ -87,7 +97,8 @@ async def to_code(config):
 
     pin = await cg.gpio_pin_expression(config[CONF_PIN])
     cg.add(var.set_pin(pin))
-    cg.add(var.set_filter_us(config[CONF_INTERNAL_FILTER]))
+    cg.add(var.set_filter_on_us(config[CONF_INTERNAL_FILTER]['True']))
+    cg.add(var.set_filter_off_us(config[CONF_INTERNAL_FILTER]['False']))
     cg.add(var.set_timeout_us(config[CONF_TIMEOUT]))
     cg.add(var.set_filter_mode(config[CONF_INTERNAL_FILTER_MODE]))
 

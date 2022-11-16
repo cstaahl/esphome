@@ -16,7 +16,8 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
   };
 
   void set_pin(InternalGPIOPin *pin) { this->pin_ = pin; }
-  void set_filter_us(uint32_t filter) { this->filter_us_ = filter; }
+  void set_filter_on_us(uint32_t filter) { this->filter_on_us_ = filter; }
+  void set_filter_off_us(uint32_t filter) { this->filter_off_us_ = filter; }
   void set_filter_mode(InternalFilterMode mode) { this->filter_mode_ = mode; }
   void set_timeout_us(uint32_t timeout) { this->timeout_us_ = timeout; }
   void set_total_sensor(sensor::Sensor *sensor) { this->total_sensor_ = sensor; }
@@ -33,7 +34,8 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
 
   InternalGPIOPin *pin_{nullptr};
   ISRInternalGPIOPin isr_pin_;
-  uint32_t filter_us_ = 0;
+  uint32_t filter_on_us_ = 0;
+  uint32_t filter_off_us_ = 0;
   uint32_t timeout_us_ = 1000000UL * 60UL * 5UL;
   sensor::Sensor *total_sensor_{nullptr};
   InternalFilterMode filter_mode_{FILTER_EDGE};
