@@ -69,9 +69,10 @@ void PulseMeterSensor::dump_config() {
   LOG_SENSOR("", "Pulse Meter", this);
   LOG_PIN("  Pin: ", this->pin_);
   if (this->filter_mode_ == FILTER_EDGE) {
-    ESP_LOGCONFIG(TAG, "  Filtering rising edges less than %u µs apart", this->filter_us_);
+    ESP_LOGCONFIG(TAG, "  Filtering rising edges less than %u µs apart", this->filter_on_us_);
   } else {
-    ESP_LOGCONFIG(TAG, "  Filtering pulses shorter than %u µs", this->filter_us_);
+    ESP_LOGCONFIG(TAG, "  Filtering high pulses shorter than %u µs", this->filter_on_us_);
+    ESP_LOGCONFIG(TAG, "  Filtering low pulses shorter than %u µs", this->filter_off_us_);
   }
   ESP_LOGCONFIG(TAG, "  Assuming 0 pulses/min after not receiving a pulse for %us", this->timeout_us_ / 1000000);
 }
@@ -93,7 +94,7 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
 
   // Check to see if we should filter this edge out
   if (sensor->filter_mode_ == FILTER_EDGE) {
-    if ((sensor->last_detected_edge_us_ - sensor->last_valid_high_edge_us_) >= sensor->filter_us_) {
+    if ((sensor->last_detected_edge_us_ - sensor->last_valid_high_edge_us_) >= sensor->filter_on_us_) {
       // Don't measure the first valid pulse (we need at least two pulses to
       // measure the width)
       if (sensor->has_valid_high_edge_) {
@@ -110,8 +111,10 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
     if (pin_val == sensor->sensor_is_high_) {
       return;
     }
+    // If pin_val is high we have switched from low and we need to check the low filter time, else the high one
+    uint32_t filter_us_ = pin_val ? sensor->filter_off_us_ : sensor->filter_off_us_;
     // Make sure the signal has been stable long enough
-    if (sensor->has_detected_edge_ && (now - sensor->last_detected_edge_us_ >= sensor->filter_us_)) {
+    if (sensor->has_detected_edge_ && (now - sensor->last_detected_edge_us_ >= filter_us_)) {
       if (pin_val) {
         sensor->has_valid_high_edge_ = true;
         sensor->last_valid_high_edge_us_ = sensor->last_detected_edge_us_;
