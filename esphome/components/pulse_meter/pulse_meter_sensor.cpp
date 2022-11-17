@@ -129,8 +129,8 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
       sensor->last_detected_edge_us_ = now;
       return;
     }
-    // If pin_val is high we have switched from low and we need to check the low filter time, else the high one
-    uint32_t filter_us_ = pin_val ? sensor->filter_off_us_ : sensor->filter_off_us_;
+    // If the sensor state is high we need to compar to the high filter value, else the low one
+    uint32_t const filter_us_ = sensor->sensor_is_high_ ? sensor->filter_on_us_ : sensor->filter_off_us_;
     // Make sure the signal has been stable long enough
     if (sensor->has_detected_edge_ && (now - sensor->last_detected_edge_us_ >= filter_us_)) {
       if (pin_val) {
