@@ -123,6 +123,9 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
     bool pin_val = sensor->isr_pin_.digital_read();
     // Ignore false edges that may be caused by bouncing and exit the ISR ASAP
     if (pin_val == sensor->sensor_is_high_) {
+      // Register the edge even if we exit early
+      sensor->has_detected_edge_ = true;
+      sensor->last_detected_edge_us_ = now;
       return;
     }
     // Make sure the signal has been stable long enough
