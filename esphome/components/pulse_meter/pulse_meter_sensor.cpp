@@ -24,6 +24,7 @@ void PulseMeterSensor::loop() {
   // Get a local copy of the volatile sensor values, to make sure they are not
   // modified by the ISR. This could cause overflow in the following arithmetic
   const uint32_t last_valid_high_edge_us = this->last_valid_high_edge_us_;
+  const uint32_t last_valid_low_edge_us = this->last_valid_low_edge_us_;
   const bool has_valid_high_edge = this->has_valid_high_edge_;
   const uint32_t last_detected_edge_us = this->last_detected_edge_us_;
   const uint32_t now = micros();
@@ -40,7 +41,10 @@ void PulseMeterSensor::loop() {
 
   // If we've exceeded our timeout interval without receiving any pulses, assume
   // 0 pulses/min until we get at least two valid pulses.
-  const uint32_t time_since_valid_edge_us = now - last_valid_high_edge_us;
+  const uint32_t time_since_valid_high_edge_us = now - last_valid_high_edge_us;
+  // In EDGE mode we dont't resgister the low edges. We treat it as a high edge in that case
+  const uint32_t time_since_valid_low_edge_us = this->filter_mode_ == FILTER_EDGE ? time_since_valid_high_edge_us : now - last_valid_low_edge_us;
+  const uint32_t time_since_valid_edge_us = time_since_valid_high_edge_us < time_since_valid_low_edge_us ? time_since_valid_high_edge_us : time_since_valid_low_edge_us;
   if ((has_valid_high_edge) && (time_since_valid_edge_us > this->timeout_us_)) {
     ESP_LOGD(TAG, "No pulse detected for %us, assuming 0 pulses/min", time_since_valid_edge_us / 1000000);
 
