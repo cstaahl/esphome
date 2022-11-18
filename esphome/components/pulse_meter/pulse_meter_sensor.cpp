@@ -25,7 +25,7 @@ void PulseMeterSensor::loop() {
   // modified by the ISR. This could cause overflow in the following arithmetic
   const uint32_t last_valid_high_edge_us = this->last_valid_high_edge_us_;
   const bool has_valid_high_edge = this->has_valid_high_edge_;
-  const bool last_detected_edge_us = this->last_detected_edge_us_;
+  const uint32_t last_detected_edge_us = this->last_detected_edge_us_;
   const uint32_t now = micros();
   const bool pin_val = this->isr_pin_.digital_read();
 
