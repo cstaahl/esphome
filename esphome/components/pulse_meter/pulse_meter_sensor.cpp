@@ -31,13 +31,13 @@ void PulseMeterSensor::loop() {
   const bool pin_val = this->isr_pin_.digital_read();
 
   if (pin_val != this->sensor_is_high_){
-    if ((now - last_detected_edge_us) > this->filter_us_) {
+    if ( (this->sensor_is_high_ && (now - last_detected_edge_us) > this->filter_on_us_) ||
+         (!this->sensor_is_high_ && (now - last_detected_edge_us) > this->filter_off_us_) ){
       ESP_LOGVV(TAG, "Correcting wrong sensor state");
       this->sensor_is_high_ = pin_val;
     }
     
   }
-
 
   // If we've exceeded our timeout interval without receiving any pulses, assume
   // 0 pulses/min until we get at least two valid pulses.
