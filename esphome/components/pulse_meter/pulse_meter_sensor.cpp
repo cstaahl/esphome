@@ -32,7 +32,7 @@ void PulseMeterSensor::loop() {
 
   if (pin_val != this->sensor_is_high_){
     if ((now - last_detected_edge_us) > this->filter_us_) {
-      ESP_LOGVV(TAG, "Correcting wrong sensor state");
+      ESP_LOGVV(TAG, "Correcting wrong sensor state to %s", (pin_val ? "high" : "low"));
       this->sensor_is_high_ = pin_val;
     }
     
@@ -94,7 +94,7 @@ void PulseMeterSensor::dump_config() {
 void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
   // This is an interrupt handler - we can't call any virtual method from this
   // method
-
+  ESP_LOGVV(TAG, "Interrupt registered");
   // Get the current time before we do anything else so the measurements are
   // consistent
   const uint32_t now = micros();
@@ -121,15 +121,18 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
   } else {
     // Filter Mode is PULSE
     bool pin_val = sensor->isr_pin_.digital_read();
+    ESP_LOGVV(TAG, "Pin value is %d", pin_val);
     // Ignore false edges that may be caused by bouncing and exit the ISR ASAP
     if (pin_val == sensor->sensor_is_high_) {
       // Register the edge even if we exit early
       sensor->has_detected_edge_ = true;
       sensor->last_detected_edge_us_ = now;
+      ESP_LOGVV(TAG, "Value equals state, exiting early");
       return;
     }
     // Make sure the signal has been stable long enough
     if (sensor->has_detected_edge_ && (now - sensor->last_detected_edge_us_ >= sensor->filter_us_)) {
+      ESP_LOGVV(TAG, "Signal has been stable long enough");
       if (pin_val) {
         sensor->has_valid_high_edge_ = true;
         sensor->last_valid_high_edge_us_ = sensor->last_detected_edge_us_;
@@ -144,10 +147,11 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
         sensor->last_valid_low_edge_us_ = sensor->last_detected_edge_us_;
         sensor->sensor_is_high_ = false;
       }
-    }
+    } else {ESP_LOGVV(TAG, "Signal has NOT been stable long enough");}
     sensor->has_detected_edge_ = true;
-    sensor->last_detected_edge_us_ = now;
+    sensor->last_detected_edge_us_ = now; 
   }
+  ESP_LOGVV(TAG, "Exiting ISR");
 }
 
 }  // namespace pulse_meter
