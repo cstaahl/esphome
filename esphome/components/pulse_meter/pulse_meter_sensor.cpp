@@ -93,9 +93,22 @@ void PulseMeterSensor::handle_state_change(uint32_t time_us){
     if (this->sensor_is_high_){
       this->total_pulses_++;
       ESP_LOGD(TAG, "Incremented pulses to %u", this->total_pulses_);
+      
       if (this->has_valid_high_edge_) {
         this->pulse_width_us_ = this->last_detected_edge_us_ - this->last_valid_high_edge_us_ ;
         ESP_LOGVV(TAG, "Set pulse width to %u", this->pulse_width_us_);
+
+        if (this->pulse_width_us_ < 400000) {     
+          ESP_LOGW(TAG, "time_us = %u", time_us);
+          ESP_LOGW(TAG, "this->last_detected_edge_us_ = %u", this->last_detected_edge_us_);
+          ESP_LOGW(TAG, "this->last_valid_high_edge_us_ = %u", this->last_valid_high_edge_us_);
+          ESP_LOGW(TAG, "Set pulse width to %u", this->pulse_width_us_);
+          ESP_LOGW(TAG, "this->filter_us_ = %u", this->filter_us_);
+          ESP_LOGW(TAG, "this->sensor_is_high_ = %d", this->sensor_is_high_);
+          ESP_LOGW(TAG, "pin_val = %d", pin_val);
+          
+        }
+
       }
       this->has_valid_high_edge_ = true;
       this->last_valid_high_edge_us_ = this->last_detected_edge_us_;
@@ -140,25 +153,39 @@ void IRAM_ATTR PulseMeterSensor::gpio_intr(PulseMeterSensor *sensor) {
       ESP_LOGVV(TAG, "Value equals state, exiting early");
       return;
     }
-    if (sensor->has_pending_state_change && (now - sensor->last_detected_edge_us_) > sensor->filter_us_) {
-      if (!pin_val) {
+    const uint32_t delta_t_us = now - sensor->last_detected_edge_us_;
+    if (delta_t_us > sensor->filter_us_) {
+      if (sensor->has_pending_state_change && !pin_val) {
         // We need to handle a pulse that would have been missed by the loop function
         sensor->total_pulses_++;
-
-        ESP_LOGVV(TAG, "Unhandled state change of length delta_t = %u. Number of pulses incremented", (now - sensor->last_detected_edge_us_));
-
+        ESP_LOGW(TAG, "Unhandled state change of length delta_t = %u. Number of pulses incremented", delta_t_us);
         ESP_LOGVV(TAG, "Incremented pulses to %u", sensor->total_pulses_);
         if (sensor->has_valid_high_edge_) {
-          sensor->pulse_width_us_ = now - sensor->last_detected_edge_us_;
+          sensor->pulse_width_us_ = sensor->last_detected_edge_us_ - sensor->last_valid_high_edge_us_;
           ESP_LOGVV(TAG, "Set pulse width to %u", sensor->pulse_width_us_);
+
+          if (sensor->pulse_width_us_ < 400000) {     
+            ESP_LOGW(TAG, "now = %u", now);
+            ESP_LOGW(TAG, "sensor->last_detected_edge_us_ = %u", sensor->last_detected_edge_us_);
+            ESP_LOGW(TAG, "sensor->last_valid_high_edge_us_ = %u", sensor->last_valid_high_edge_us_);
+            ESP_LOGW(TAG, "Set pulse width to %u", sensor->pulse_width_us_);
+            ESP_LOGW(TAG, "sensor->filter_us_ = %u", sensor->filter_us_);
+            ESP_LOGW(TAG, "sensor->sensor_is_high_ = %d", sensor->sensor_is_high_);
+            ESP_LOGW(TAG, "pin_val = %d", pin_val);
+          }
+
         }
         sensor->has_valid_high_edge_ = true;
         sensor->last_valid_high_edge_us_ = sensor->last_detected_edge_us_;
         ESP_LOGVV(TAG, "last_valid_high_edge_us_ is now %u", sensor->last_valid_high_edge_us_);
       }
-    }
-    sensor->has_pending_state_change = true;
-    sensor->last_detected_edge_us_ = now;
+    } 
+    // else {
+    //   ESP_LOGW(TAG, "Rejecting edge because %u < %u. state=%d, pin_val=%d", delta_t_us, sensor->filter_us_, sensor->sensor_is_high_, pin_val);
+    // }
+  sensor->has_pending_state_change = true;
+  sensor->last_detected_edge_us_ = now;
+  // ESP_LOGD(TAG, "Setting last_detected_edge_us_ to %u. state=%d, pin_val=%d", now, sensor->sensor_is_high_, pin_val);
   }
   ESP_LOGVV(TAG, "Exiting ISR");
 }
