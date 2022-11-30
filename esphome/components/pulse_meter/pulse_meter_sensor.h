@@ -29,6 +29,8 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
   void dump_config() override;
 
  protected:
+  enum StateChange {LOW_=0, HIGH_, NONE_};
+
   static void gpio_intr(PulseMeterSensor *sensor);
   void handle_state_change(uint32_t time_us);
 
@@ -49,7 +51,7 @@ class PulseMeterSensor : public sensor::Sensor, public Component {
   volatile bool sensor_is_high_ = false;
   volatile bool has_detected_edge_ = false;
   volatile bool has_valid_high_edge_ = false;
-  volatile bool has_pending_state_change = false;
+  volatile StateChange pending_state_change {NONE_};
 };
 
 }  // namespace pulse_meter
