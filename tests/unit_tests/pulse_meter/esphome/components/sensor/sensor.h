@@ -1,0 +1,1 @@
+../../../../../../esphome/components/sensor/sensor.h

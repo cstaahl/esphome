@@ -1,0 +1,1 @@
+../../../../../../esphome/components/pulse_meter/pulse_meter_sensor.h
